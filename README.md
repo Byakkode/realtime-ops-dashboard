@@ -1,11 +1,11 @@
 # realtime-ops-dashboard
 
 > A full-stack real-time monitoring dashboard with live updates, role-based views,
-> and alert management — built with ASP.NET Core 8, Blazor WebAssembly, and SignalR.
+> and alert management — built with ASP.NET Core 10, Blazor WebAssembly, and SignalR.
 
 ![Build](https://github.com/Byakkode/realtime-ops-dashboard/actions/workflows/ci.yml/badge.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![.NET](https://img.shields.io/badge/.NET_8-512BD4?style=flat&logo=dotnet&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 
 ---
@@ -25,7 +25,7 @@ architecture beyond typical tutorial scope.
 ## Architecture
 ```mermaid
 graph TD
-    A[Blazor WASM Client] -->|HTTP + WebSocket| B[ASP.NET Core 8 API]
+    A[Blazor WASM Client] -->|HTTP + WebSocket| B[ASP.NET Core 10 API]
     B -->|SignalR Hub| A
     B --> C[Application Layer]
     C --> D[Domain Layer]
@@ -52,8 +52,8 @@ keeping server load flat regardless of connected clients.
 |---|---|---|
 | Frontend | Blazor WebAssembly | Full .NET stack, no context switching to JS |
 | Real-time | SignalR | Native ASP.NET integration, WebSocket with fallback |
-| Backend | ASP.NET Core 8 | Minimal APIs + Controllers hybrid approach |
-| ORM | Entity Framework Core 8 | Code-first migrations, LINQ query safety |
+| Backend | ASP.NET Core 10 | Minimal APIs + Controllers hybrid approach |
+| ORM | Entity Framework Core 10 | Code-first migrations, LINQ query safety |
 | Database | SQL Server | Matches target enterprise environment |
 | Tests | xUnit + bUnit | bUnit for Blazor component testing |
 | Container | Docker + Compose | Reproducible local dev environment |
