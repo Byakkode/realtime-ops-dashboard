@@ -1,0 +1,6 @@
+@RealtimeDashboard.API_HostAddress = http://localhost:5039
+
+GET {{RealtimeDashboard.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
