@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RealtimeDashboard.Application\RealtimeDashboard.Application.csproj" />
     <ProjectReference Include="..\RealtimeDashboard.Infrastructure\RealtimeDashboard.Infrastructure.csproj" />
   </ItemGroup>
 
