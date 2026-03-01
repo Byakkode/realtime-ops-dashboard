@@ -15,6 +15,7 @@ public class ResourceRepository : IResourceRepository
     public async Task<Resource?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.Resources
             .Include(r => r.Thresholds)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<Resource>> GetAllAsync(CancellationToken cancellationToken = default)
