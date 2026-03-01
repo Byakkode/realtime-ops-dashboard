@@ -32,11 +32,14 @@ public class ChangeResourceStatusHandler : IRequestHandler<ChangeResourceStatusC
         _repository.Update(resource);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        foreach (var domainEvent in resource.DomainEvents)
+        var domainEvents = resource.DomainEvents.ToList();
+        resource.ClearDomainEvents();
+
+        _unitOfWork.Detach(resource);
+
+        foreach (var domainEvent in domainEvents)
         {
             await _publisher.Publish(domainEvent, cancellationToken);
         }
-
-        resource.ClearDomainEvents();
     }
 }
