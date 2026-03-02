@@ -1,0 +1,71 @@
+@using RealtimeDashboard.Client.Services.Models
+
+<div class="resource-grid">
+    <h3>Resources <span class="count">(@Resources.Count)</span></h3>
+
+    @if (!Resources.Any())
+    {
+        <p class="empty">No resources found.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Last updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var resource in Resources.OrderBy(r => r.Category).ThenBy(r => r.Name))
+                {
+                    <tr class="@GetRowClass(resource.Status)">
+                        <td><strong>@resource.Name</strong></td>
+                        <td>@resource.Category</td>
+                        <td>@(resource.Location ?? "—")</td>
+                        <td>
+                            <span class="status-badge @GetStatusClass(resource.Status)">
+                                @GetStatusIcon(resource.Status) @resource.Status
+                            </span>
+                        </td>
+                        <td class="timestamp">
+                            @((resource.UpdatedAt ?? resource.CreatedAt).ToString("HH:mm:ss"))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    [Parameter] public List<ResourceModel> Resources { get; set; } = [];
+
+    private string GetStatusClass(string status) => status switch
+    {
+        "Available" => "status-available",
+        "Occupied" => "status-occupied",
+        "UnderMaintenance" => "status-maintenance",
+        "OutOfService" => "status-outofservice",
+        _ => ""
+    };
+
+    private string GetRowClass(string status) => status switch
+    {
+        "OutOfService" => "row-critical",
+        "UnderMaintenance" => "row-warning",
+        _ => ""
+    };
+
+    private string GetStatusIcon(string status) => status switch
+    {
+        "Available" => "✅",
+        "Occupied" => "🔴",
+        "UnderMaintenance" => "🟡",
+        "OutOfService" => "⛔",
+        _ => "⚪"
+    };
+}

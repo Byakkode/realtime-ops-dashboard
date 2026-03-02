@@ -1,0 +1,53 @@
+@using RealtimeDashboard.Client.Services.Models
+
+<div class="alert-panel">
+    <h3>
+        Active Alerts
+        @if (Alerts.Any(a => a.Level == "Critical"))
+        {
+            <span class="critical-badge">⚠️ @Alerts.Count(a => a.Level == "Critical") Critical</span>
+        }
+    </h3>
+
+    @if (!Alerts.Any())
+    {
+        <div class="no-alerts">✅ No active alerts</div>
+    }
+    else
+    {
+        @foreach (var alert in Alerts.OrderBy(a => a.Level == "Critical" ? 0 : 1)
+                      .ThenByDescending(a => a.CreatedAt))
+        {
+            <div class="alert-card @GetAlertClass(alert.Level)">
+                <div class="alert-header">
+                    <span class="alert-level">@GetAlertIcon(alert.Level) @alert.Level</span>
+                    <span class="alert-time">@alert.CreatedAt.ToString("HH:mm:ss")</span>
+                </div>
+                <div class="alert-resource">@alert.ResourceName</div>
+                <div class="alert-message">@alert.Message</div>
+                <button class="resolve-btn" @onclick="() => OnResolve.InvokeAsync(alert.Id)">
+                    Resolve
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<AlertModel> Alerts { get; set; } = [];
+    [Parameter] public EventCallback<Guid> OnResolve { get; set; }
+
+    private string GetAlertClass(string level) => level switch
+    {
+        "Critical" => "alert-critical",
+        "Warning" => "alert-warning",
+        _ => "alert-info"
+    };
+
+    private string GetAlertIcon(string level) => level switch
+    {
+        "Critical" => "🔴",
+        "Warning" => "🟡",
+        _ => "ℹ️"
+    };
+}
