@@ -27,6 +27,7 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IRealtimeNotifier, ResourceHubNotifier>();
 
@@ -36,8 +37,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters
             .Add(new JsonStringEnumConverter());
     });
-builder.Services.AddEndpointsApiExplorer();
 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
@@ -45,16 +46,16 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Realtime Operations Dashboard API",
         Version = "v1",
         Description = """
-                      REST API for real-time resource availability monitoring.
+            REST API for real-time resource availability monitoring.
 
-                      **Demo domain:** Hospital resource management (beds, rooms, equipment).
-                      The same architecture applies to logistics, trading floors, and SaaS operations.
+            **Demo domain:** Hospital resource management (beds, rooms, equipment).
+            The same architecture applies to logistics, trading floors, and SaaS operations.
 
-                      **Key flows:**
-                      - `POST /api/resources` — create a resource
-                      - `PATCH /api/resources/{id}/status` — update status (triggers alerts if threshold matched)
-                      - `GET /api/alerts/active` — poll active alerts (replaced by SignalR in the dashboard)
-                      """
+            **Key flows:**
+            - `POST /api/resources` — create a resource
+            - `PATCH /api/resources/{id}/status` — update status (triggers alerts if threshold matched)
+            - `GET /api/alerts/active` — poll active alerts (replaced by SignalR in the dashboard)
+            """
     });
 
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -85,4 +86,5 @@ app.UseSwaggerUI(options =>
 app.UseHttpsRedirection();
 app.MapControllers();
 app.MapHub<ResourceHub>("/hubs/resources");
+
 app.Run();
