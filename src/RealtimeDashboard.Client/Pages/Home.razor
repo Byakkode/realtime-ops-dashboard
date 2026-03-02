@@ -1,0 +1,132 @@
+﻿@page "/"
+@using RealtimeDashboard.Client.Components
+@using RealtimeDashboard.Client.Services
+@using RealtimeDashboard.Client.Services.Models
+@inject ResourceApiService ApiService
+@inject DashboardHubService HubService
+@implements IAsyncDisposable
+
+<PageTitle>Operations Dashboard</PageTitle>
+
+<div class="dashboard-header">
+    <h1>⚡ Operations Dashboard</h1>
+    <div class="connection-status @(HubService.IsConnected ? "connected" : "disconnected")">
+        @(HubService.IsConnected ? "🟢 Live" : "🔴 Disconnected")
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading resources...</p>
+}
+else
+{
+    <div class="dashboard-layout">
+        <div class="main-panel">
+            <ResourceGrid Resources="_resources" />
+        </div>
+        <div class="side-panel">
+            <AlertPanel Alerts="_alerts" OnResolve="HandleResolveAlert" />
+        </div>
+    </div>
+}
+
+<style>
+    body { background: #0f0f1a; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+    .dashboard-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 24px; background: #1a1a2e; border-bottom: 1px solid #2a2a4a;
+    }
+    .dashboard-header h1 { margin: 0; font-size: 1.4rem; }
+    .connection-status { font-size: 0.85rem; padding: 4px 12px;
+        border-radius: 20px; background: #2a2a4a; }
+
+    .dashboard-layout { display: grid; grid-template-columns: 1fr 340px;
+        gap: 20px; padding: 20px; min-height: calc(100vh - 60px); }
+
+    table { width: 100%; border-collapse: collapse; background: #1a1a2e;
+        border-radius: 8px; overflow: hidden; }
+    th { background: #2a2a4a; padding: 12px 16px; text-align: left;
+         font-size: 0.8rem; text-transform: uppercase; color: #a0a0c0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #2a2a4a; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-warning { background: rgba(249, 202, 36, 0.05); }
+    tr.row-critical { background: rgba(255, 107, 107, 0.08); }
+
+    .status-badge { padding: 3px 10px; border-radius: 12px;
+        font-size: 0.8rem; font-weight: 500; }
+    .status-available { background: rgba(78, 204, 163, 0.15); color: #4ecca3; }
+    .status-occupied { background: rgba(255, 107, 107, 0.15); color: #ff6b6b; }
+    .status-maintenance { background: rgba(249, 202, 36, 0.15); color: #f9ca24; }
+    .status-outofservice { background: rgba(255, 50, 50, 0.2); color: #ff3232; }
+
+    .alert-panel { background: #1a1a2e; border-radius: 8px; padding: 16px; }
+    .alert-card { padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+    .alert-critical { background: rgba(255, 107, 107, 0.12);
+        border-left: 3px solid #ff6b6b; }
+    .alert-warning { background: rgba(249, 202, 36, 0.1);
+        border-left: 3px solid #f9ca24; }
+    .alert-header { display: flex; justify-content: space-between;
+        font-size: 0.75rem; margin-bottom: 6px; }
+    .alert-resource { font-weight: 600; margin-bottom: 4px; }
+    .alert-message { font-size: 0.85rem; color: #a0a0c0; margin-bottom: 8px; }
+    .resolve-btn { background: #2a2a4a; border: 1px solid #4a4a6a; color: #e0e0e0;
+        padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .resolve-btn:hover { background: #3a3a5a; }
+    .no-alerts { color: #4ecca3; padding: 20px; text-align: center; }
+    .critical-badge { background: #ff6b6b; color: white; font-size: 0.7rem;
+        padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+    .timestamp { color: #606080; font-size: 0.8rem; }
+    .count { color: #606080; font-weight: normal; font-size: 0.9rem; }
+</style>
+
+@code {
+    private List<ResourceModel> _resources = [];
+    private List<AlertModel> _alerts = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _resources = await ApiService.GetAllResourcesAsync();
+        _alerts = await ApiService.GetActiveAlertsAsync();
+        _isLoading = false;
+
+        HubService.OnResourceStatusUpdated += HandleResourceUpdate;
+        HubService.OnAlertReceived += HandleAlertReceived;
+        HubService.OnConnectionStateChanged += _ => InvokeAsync(StateHasChanged);
+
+        await HubService.StartAsync("viewer");
+    }
+
+    private void HandleResourceUpdate(ResourceStatusUpdate update)
+    {
+        var resource = _resources.FirstOrDefault(r => r.Id == update.ResourceId);
+        if (resource is not null)
+        {
+            resource.Status = update.NewStatus;
+            resource.UpdatedAt = update.OccurredAt;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleAlertReceived(AlertModel alert)
+    {
+        _alerts.Insert(0, alert);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleResolveAlert(Guid alertId)
+    {
+        await ApiService.ResolveAlertAsync(alertId, "dashboard-user");
+        _alerts.RemoveAll(a => a.Id == alertId);
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        HubService.OnResourceStatusUpdated -= HandleResourceUpdate;
+        HubService.OnAlertReceived -= HandleAlertReceived;
+        await HubService.DisposeAsync();
+    }
+}
