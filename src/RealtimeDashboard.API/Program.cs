@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
+using RealtimeDashboard.API.Hubs;
 using RealtimeDashboard.API.Middleware;
 using RealtimeDashboard.API.SeedData;
 using RealtimeDashboard.Application;
+using RealtimeDashboard.Application.Common.Interfaces;
 using RealtimeDashboard.Infrastructure;
 using RealtimeDashboard.Infrastructure.Persistence;
 
@@ -9,14 +11,34 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevelopmentPolicy", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5000",
+                "https://localhost:5001",
+                "null"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, ResourceHubNotifier>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters
             .Add(new JsonStringEnumConverter());
     });
-builder.Services.AddEndpointsApiExplorer();
 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
@@ -24,16 +46,16 @@ builder.Services.AddSwaggerGen(options =>
         Title = "Realtime Operations Dashboard API",
         Version = "v1",
         Description = """
-                      REST API for real-time resource availability monitoring.
+            REST API for real-time resource availability monitoring.
 
-                      **Demo domain:** Hospital resource management (beds, rooms, equipment).
-                      The same architecture applies to logistics, trading floors, and SaaS operations.
+            **Demo domain:** Hospital resource management (beds, rooms, equipment).
+            The same architecture applies to logistics, trading floors, and SaaS operations.
 
-                      **Key flows:**
-                      - `POST /api/resources` — create a resource
-                      - `PATCH /api/resources/{id}/status` — update status (triggers alerts if threshold matched)
-                      - `GET /api/alerts/active` — poll active alerts (replaced by SignalR in the dashboard)
-                      """
+            **Key flows:**
+            - `POST /api/resources` — create a resource
+            - `PATCH /api/resources/{id}/status` — update status (triggers alerts if threshold matched)
+            - `GET /api/alerts/active` — poll active alerts (replaced by SignalR in the dashboard)
+            """
     });
 
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -52,6 +74,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors("DevelopmentPolicy");
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -62,4 +85,6 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapHub<ResourceHub>("/hubs/resources");
+
 app.Run();

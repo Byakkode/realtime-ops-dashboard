@@ -26,7 +26,7 @@ public class ChangeResourceStatusHandler : IRequestHandler<ChangeResourceStatusC
         CancellationToken cancellationToken)
     {
         var resource = await _repository.GetByIdAsync(request.ResourceId, cancellationToken)
-                       ?? throw new NotFoundException(nameof(Resource), request.ResourceId);
+            ?? throw new NotFoundException(nameof(Resource), request.ResourceId);
 
         resource.ChangeStatus(request.NewStatus, request.ChangedBy);
         _repository.Update(resource);
@@ -34,7 +34,6 @@ public class ChangeResourceStatusHandler : IRequestHandler<ChangeResourceStatusC
 
         var domainEvents = resource.DomainEvents.ToList();
         resource.ClearDomainEvents();
-
         _unitOfWork.Detach(resource);
 
         foreach (var domainEvent in domainEvents)
