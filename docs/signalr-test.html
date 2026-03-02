@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SignalR Test — RealtimeDashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        #log { background: #16213e; padding: 15px; border-radius: 8px; height: 400px;
+            overflow-y: auto; margin-top: 20px; }
+        .update { color: #4ecca3; }
+        .alert-warning { color: #f9ca24; }
+        .alert-critical { color: #ff6b6b; }
+        .info { color: #a8a8b3; }
+    </style>
+</head>
+<body>
+<h2>🔴 SignalR Live — Resource Hub</h2>
+<p>Open this file while the API is running, then trigger a status change via Swagger.</p>
+<div id="log"></div>
+
+<script>
+    const log = document.getElementById('log');
+
+    function addLog(message, cssClass = 'info') {
+        const time = new Date().toLocaleTimeString();
+        log.innerHTML += `<div class="${cssClass}">[${time}] ${message}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("http://localhost:5039/hubs/resources")
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on("ReceiveResourceUpdate", (msg) => {
+        addLog(
+            `STATUS CHANGE — ${msg.resourceName}: ${msg.previousStatus} → ${msg.newStatus} (by ${msg.changedBy})`,
+            'update'
+        );
+    });
+
+    connection.on("ReceiveAlert", (msg) => {
+        const cssClass = msg.level === 'Critical' ? 'alert-critical' : 'alert-warning';
+        addLog(`ALERT [${msg.level}] — ${msg.resourceName}: ${msg.message}`, cssClass);
+    });
+
+    connection.start()
+        .then(() => {
+            addLog('Connected to ResourceHub');
+            return connection.invoke("JoinRoleGroup", "viewer");
+        })
+        .then(() => addLog('Joined group: Viewers'))
+        .catch(err => addLog('Connection error: ' + err, 'alert-critical'));
+</script>
+</body>
+</html>

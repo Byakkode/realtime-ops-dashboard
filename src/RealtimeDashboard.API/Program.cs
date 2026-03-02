@@ -1,7 +1,9 @@
 using System.Text.Json.Serialization;
+using RealtimeDashboard.API.Hubs;
 using RealtimeDashboard.API.Middleware;
 using RealtimeDashboard.API.SeedData;
 using RealtimeDashboard.Application;
+using RealtimeDashboard.Application.Common.Interfaces;
 using RealtimeDashboard.Infrastructure;
 using RealtimeDashboard.Infrastructure.Persistence;
 
@@ -9,6 +11,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevelopmentPolicy", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5000",
+                "https://localhost:5001",
+                "null"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, ResourceHubNotifier>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -52,6 +73,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors("DevelopmentPolicy");
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -62,4 +84,5 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapHub<ResourceHub>("/hubs/resources");
 app.Run();

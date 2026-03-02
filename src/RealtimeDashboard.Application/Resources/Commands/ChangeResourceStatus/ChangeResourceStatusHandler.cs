@@ -29,17 +29,15 @@ public class ChangeResourceStatusHandler : IRequestHandler<ChangeResourceStatusC
                        ?? throw new NotFoundException(nameof(Resource), request.ResourceId);
 
         resource.ChangeStatus(request.NewStatus, request.ChangedBy);
+        
         _repository.Update(resource);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var domainEvents = resource.DomainEvents.ToList();
-        resource.ClearDomainEvents();
-
-        _unitOfWork.Detach(resource);
-
-        foreach (var domainEvent in domainEvents)
+        
+        foreach (var domainEvent in resource.DomainEvents)
         {
             await _publisher.Publish(domainEvent, cancellationToken);
         }
+
+        resource.ClearDomainEvents();
     }
 }
