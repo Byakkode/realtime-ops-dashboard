@@ -1,19 +1,62 @@
 services:
-    sqlserver:
-        image: mcr.microsoft.com/mssql/server:2025-latest
-        container_name: realtime-dashboard-db
-        environment:
-            SA_PASSWORD: "Dev_Password_123!"
-            ACCEPT_EULA: "Y"
-            MSSQL_PID: "Developer"
-        ports:
-            - "1433:1433"
-        volumes:
-            - sqlserver_data:/var/opt/mssql
-        healthcheck:
-            test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Dev_Password_123!", "-Q", "SELECT 1"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: realtime-db
+    environment:
+      SA_PASSWORD: "${DB_PASSWORD}"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q 'SQL Server is now ready' /var/opt/mssql/log/errorlog"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - dashboard-net
+
+  api:
+    build:
+      context: .
+      dockerfile: src/RealtimeDashboard.API/Dockerfile
+    container_name: realtime-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: >
+        Server=sqlserver,1433;
+        Database=RealtimeDashboard;
+        User Id=sa;
+        Password=${DB_PASSWORD};
+        TrustServerCertificate=True
+      Cors__AllowedOrigins: "http://localhost:3000"
+    ports:
+      - "5000:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - dashboard-net
+
+  client:
+    build:
+      context: .
+      dockerfile: src/RealtimeDashboard.Client/Dockerfile
+    container_name: realtime-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - dashboard-net
+
 volumes:
-    sqlserver_data:
+  sqlserver_data:
+
+networks:
+  dashboard-net:
+    driver: bridge
