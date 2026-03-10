@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RealtimeDashboard.API.Hubs;
 using RealtimeDashboard.API.Middleware;
 using RealtimeDashboard.API.SeedData;
@@ -21,26 +22,19 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var allowedOrigins = builder.Configuration
+                         .GetSection("Cors:AllowedOrigins")
+                         .Get<string[]>()
+                     ?? builder.Configuration["Cors:AllowedOrigins"]?.Split(',')
+                     ?? ["http://localhost:5001"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorClient", policy =>
-    {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(origin =>
-                    new Uri(origin).Host == "localhost")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
-        else
-        {
-            policy.WithOrigins("https://OnVerraMonNomDeDomaine.com")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
-    });
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -64,5 +58,34 @@ app.UseSwaggerUI(options =>
 
 app.MapControllers();
 app.MapHub<ResourceHub>("/hubs/resources");
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    var retries = 5;
+    while (retries > 0)
+    {
+        try
+        {
+            await context.Database.MigrateAsync();
+
+            if (app.Environment.IsDevelopment())
+                await ApplicationDbContextSeed.SeedAsync(context);
+
+            break;
+        }
+        catch (Exception ex)
+        {
+            retries--;
+            if (retries == 0) throw;
+            app.Logger.LogWarning(
+                "Database not ready, retrying... ({Retries} attempts left). Error: {Error}",
+                retries, ex.Message);
+            await Task.Delay(5000);
+        }
+    }
+}
 
 app.Run();
