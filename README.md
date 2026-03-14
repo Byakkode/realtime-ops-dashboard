@@ -7,6 +7,11 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET_10-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![SignalR](https://img.shields.io/badge/SignalR-real--time-brightgreen)
+
+---
+
+[Overview] [Architecture] [Tech Stack] [Getting Started] [Project Structure] [Roadmap] [Key Decisions] [License]
 
 ---
 
@@ -19,6 +24,12 @@ a production-grade dashboard architecture using .NET's real-time capabilities.
 The demo domain tracks **operational resource availability** with live updates,
 threshold-based alerts, and multi-role access — constraints that stress-test the
 architecture beyond typical tutorial scope.
+
+**Live flow:**
+1. Operator changes a resource status via REST API
+2. Domain event dispatched → alert created if threshold matched
+3. SignalR pushes both updates to all connected clients instantly
+4. Blazor dashboard re-renders without page reload
 
 ---
 
@@ -111,12 +122,15 @@ docs/
 ## Roadmap
 
 - [x] Phase 1 — Repository setup, architecture, CI/CD pipeline
-- [ ] Phase 2 — Domain model, EF Core migrations, seed data
-- [ ] Phase 3 — SignalR hub + real-time update push
-- [ ] Phase 4 — Blazor dashboard UI with live charts
-- [ ] Phase 5 — Role-based views (admin / operator / viewer)
-- [ ] Phase 6 — Alert thresholds and notification system
-- [ ] Phase 7 — Docker Compose + deployment documentation
+- [x] Phase 2 — Domain model, EF Core migrations, seed data
+- [x] Phase 3 — SignalR hub + real-time update push
+- [x] Phase 4 — Blazor dashboard UI with live resource grid
+- [x] Phase 5 — Role-based alert routing (Admin / Operator / Viewer)
+- [x] Phase 6 — Alert thresholds and notification system
+- [x] Phase 7 — Docker Compose full stack deployment
+- [ ] Phase 8 — JWT authentication with role claims *(v2.0)*
+- [ ] Phase 9 — Status history and audit trail *(v2.0)*
+- [ ] Phase 10 — Integration tests with Testcontainers *(v2.0)*
 
 See [open issues](https://github.com/Byakkode/realtime-ops-dashboard/issues)
 for detailed task breakdown.
